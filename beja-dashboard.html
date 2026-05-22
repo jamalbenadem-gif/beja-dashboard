@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BeJA §37.3 Tourplanung</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9px; }
+  </style>
+</head>
+<body>
+  <div id="root" style="height:100vh"></div>
+  <script type="text/babel">
+    const { useState, useMemo, useEffect, useCallback } = React;
+
+
+const G = "#2d7a4f";
+const STORAGE_KEY = "beja-37-3-erledigt-v1";
+
+const PATIENTS = [
+  {id:453,name:"Naerger, Karin",           addr:"Am Erbenberg 61",            plz:"58638",ort:"Iserlohn",          tel:"017684575156",  dat:"10.06.2026"},
+  {id:404,name:"Troughton, Renate",        addr:"Weststraße 17",              plz:"58638",ort:"Iserlohn",          tel:"015750177755",  dat:"11.02.2026"},
+  {id:239,name:"Heda, Marion",             addr:"Echelnteichweg 3",           plz:"58640",ort:"Iserlohn",          tel:"0160-8431558",  dat:"25.05.2026"},
+  {id:208,name:"Kotola, Despina",          addr:"Schmiedestraße 8",           plz:"58640",ort:"Iserlohn",          tel:"0163-7264868",  dat:"17.02.2026"},
+  {id:397,name:"Dragon, Edith",            addr:"Ginsterweg 16",              plz:"58675",ort:"Hemer",             tel:"02372-3113",    dat:"07.11.2025"},
+  {id:306,name:"Römer, Martin",            addr:"Mendener Str. 109",          plz:"58675",ort:"Hemer",             tel:"01575-1927778", dat:"07.08.2025"},
+  {id:442,name:"Wach, Christina",          addr:"Von Wrede Straße 1c",        plz:"58675",ort:"Hemer",             tel:"015560243442",  dat:"09.04.2026"},
+  {id:374,name:"Gersdorf, Helga",          addr:"Am Wasserrad 29",            plz:"58706",ort:"Menden",            tel:"02373-10401",   dat:"01.04.2026"},
+  {id:241,name:"Schmidt, Maria",           addr:"Am Wasserrad 29",            plz:"58706",ort:"Menden",            tel:"02373-3979800", dat:"14.05.2026"},
+  {id:275,name:"Anagnostis, Stathis",      addr:"Werlerstr 26",               plz:"58706",ort:"Menden",            tel:"0157-84364073", dat:"09.04.2026"},
+  {id:218,name:"Schröder, Anna",           addr:"Bachstrasse 71",             plz:"58706",ort:"Menden",            tel:"0160-7185510",  dat:"19.05.2026"},
+  {id:322,name:"Niering, Elfriede",        addr:"Bodelschwingstraße 15",      plz:"58706",ort:"Menden",            tel:"02373-60686",   dat:"04.09.2025"},
+  {id:443,name:"Kolatke, Ingrid",          addr:"Bodelsschwingstraße 15",     plz:"58706",ort:"Menden",            tel:"02373-390353",  dat:"13.04.2026"},
+  {id:430,name:"Paschalaki, Drossia",      addr:"Brückstraße 17",             plz:"58706",ort:"Menden",            tel:"016090512621",  dat:"20.02.2026"},
+  {id:408,name:"Heydecke, Thekla",         addr:"Carl-Schmöle Str. 3a",       plz:"58706",ort:"Menden",            tel:"0179-1090087",  dat:"11.02.2026"},
+  {id:451,name:"Riehl, Wolfgang",          addr:"Damaschkestraße 12",         plz:"58706",ort:"Menden",            tel:"02373-84434",   dat:"18.02.2026"},
+  {id:244,name:"Dimkos, Wassilios",        addr:"Körnerstr. 2",               plz:"58706",ort:"Menden",            tel:"02373-74864",   dat:"09.04.2026"},
+  {id:373,name:"Dirksmeier, Ulrich",       addr:"Humboldtweg 13",             plz:"58706",ort:"Menden",            tel:"02373-65118",   dat:"18.03.2026"},
+  {id:480,name:"Dirksmeier, Ingrid",       addr:"Humboldtweg 13",             plz:"58706",ort:"Menden",            tel:"02373-65118",   dat:"18.03.2026"},
+  {id:416,name:"Käseberg, Kurt",           addr:"Friedrich-Glunz-Str. 22",    plz:"58706",ort:"Menden",            tel:"0157-39052964", dat:"18.02.2026"},
+  {id:331,name:"Kelm, Milan",              addr:"Frödenbergerstraße 143",     plz:"58706",ort:"Menden",            tel:"01523-6287011", dat:"25.05.2026"},
+  {id:309,name:"Junker, Ute",              addr:"Grüner Weg 38a",             plz:"58706",ort:"Menden",            tel:"02373-60434",   dat:"07.04.2026"},
+  {id:431,name:"Natz, Gerda",              addr:"Hauptstraße 5",              plz:"58706",ort:"Menden",            tel:"0237363794",    dat:"08.02.2026"},
+  {id:310,name:"Eismann, Erika",           addr:"Hedwig-Dransfeld-Str. 8",    plz:"58706",ort:"Menden",            tel:"02373-9612244", dat:"17.08.2025"},
+  {id:444,name:"Dourali, Kalliopi",        addr:"Hochstraße 16",              plz:"58706",ort:"Menden",            tel:"015738289424",  dat:"05.06.2026"},
+  {id:189,name:"Spiekermann, Erwin",       addr:"Hofeskamp 8",                plz:"58706",ort:"Menden",            tel:"02373-3304",    dat:"27.08.2025"},
+  {id:292,name:"Gerken, Christel",         addr:"Kolpingstrasse 5a",          plz:"58706",ort:"Menden",            tel:"0163-3455115",  dat:"07.04.2026"},
+  {id:392,name:"Goeke, Christine",         addr:"Kolpingstrasse 34",          plz:"58706",ort:"Menden",            tel:"–",             dat:"11.02.2026"},
+  {id:454,name:"Hossein, Koushani",        addr:"Kolpingstraße 10",           plz:"58706",ort:"Menden",            tel:"017624885101",  dat:"04.06.2026"},
+  {id:176,name:"Lehecka, Eva-Maria",       addr:"Kaiserstraße 38",            plz:"58706",ort:"Menden",            tel:"02373-9814925", dat:"18.02.2026"},
+  {id:457,name:"Lehecka, Günther",         addr:"Kaiserstraße 38",            plz:"58706",ort:"Menden",            tel:"02373-9814925", dat:"18.02.2026"},
+  {id:362,name:"Shala, Adonis",            addr:"Kaiserstraße 23",            plz:"58706",ort:"Menden",            tel:"0162-9847387",  dat:"28.10.2025"},
+  {id:470,name:"Ardashin, Abdo",           addr:"Kirchpl. 13",                plz:"58706",ort:"Menden",            tel:"0179-4639727",  dat:"09.05.2026"},
+  {id:330,name:"Kort, Helga",              addr:"Overhuesstraße 4",           plz:"58706",ort:"Menden",            tel:"02373-66983",   dat:"09.04.2026"},
+  {id:238,name:"Schmetz, Rita",            addr:"Lisztstrasse 7",             plz:"58706",ort:"Menden",            tel:"0157-52051296", dat:"21.02.2026"},
+  {id:332,name:"Palermo, Barbara",         addr:"Lohmühle 2",                 plz:"58706",ort:"Menden",            tel:"0152-15142951", dat:"08.04.2026"},
+  {id:336,name:"Palermo, Vincenzo",        addr:"Lohmühle 2",                 plz:"58706",ort:"Menden",            tel:"0152-15142951", dat:"08.04.2026"},
+  {id:434,name:"Musaev, Alvi",             addr:"Markstraße 2",               plz:"58706",ort:"Menden",            tel:"01791438114",   dat:"03.05.2026"},
+  {id:409,name:"Ziedorn, Anke",            addr:"Mühlenbergstrasse 115",      plz:"58706",ort:"Menden",            tel:"02373-61328",   dat:"15.01.2026"},
+  {id:410,name:"Ziedorn, Karl-Heinz",      addr:"Mühlenbergstrasse 115",      plz:"58706",ort:"Menden",            tel:"02373-61328",   dat:"15.01.2026"},
+  {id:156,name:"Paterno, Filippo",         addr:"Neumarkt 10e",               plz:"58706",ort:"Menden",            tel:"0176-41130332", dat:"09.04.2026"},
+  {id:364,name:"Arimont, Willi",           addr:"Nordwall 14",                plz:"58706",ort:"Menden",            tel:"02373-918857",  dat:"11.06.2026"},
+  {id:221,name:"Giuffrida, Salvatore",     addr:"Obere Promenade 5",          plz:"58706",ort:"Menden",            tel:"0176-30183805", dat:"19.02.2026"},
+  {id:316,name:"Krowczyski, Miroslaw",     addr:"Pater-Kolbe Straße 14",      plz:"58706",ort:"Menden",            tel:"0179-2426371",  dat:"22.06.2026"},
+  {id:249,name:"Böckelmann, Maria",        addr:"Pellenberg 10",              plz:"58706",ort:"Menden",            tel:"02373-3791",    dat:"18.08.2025"},
+  {id:396,name:"Schmitz, Renate",          addr:"Pellenberg 4b",              plz:"58706",ort:"Menden",            tel:"02373-10364",   dat:"02.11.2025"},
+  {id:367,name:"Tapprogge, Gerda",         addr:"Siebergskamp 3a",            plz:"58706",ort:"Menden",            tel:"0160-94411184", dat:"10.04.2026"},
+  {id:360,name:"Tapprogge, Josef",         addr:"Siebergskamp 3a",            plz:"58706",ort:"Menden",            tel:"0176-34529318", dat:"10.04.2026"},
+  {id:179,name:"Molochas, Panagiotis",     addr:"Südwall 4",                  plz:"58706",ort:"Menden",            tel:"0177-3431808",  dat:"26.08.2025"},
+  {id:314,name:"Müller, Ingrid",           addr:"Unnaerstr 8",                plz:"58706",ort:"Menden",            tel:"02373-6889081", dat:"13.04.2026"},
+  {id:186,name:"Bundle, Ilse",             addr:"Unnaer Str. 53",             plz:"58706",ort:"Menden",            tel:"02373-1741690", dat:"18.08.2025"},
+  {id:311,name:"Holtmann, Anne-Kathrin",   addr:"Von-Lilien-Str. 28",         plz:"58706",ort:"Menden",            tel:"0174-2359740",  dat:"10.04.2026"},
+  {id:329,name:"Schelte, Ruth",            addr:"Walter-Ulmke-Straße 3",      plz:"58706",ort:"Menden",            tel:"02373-14101",   dat:"12.02.2025"},
+  {id:174,name:"Schnadt, Christine",       addr:"Walburgisstr. 20",           plz:"58706",ort:"Menden",            tel:"02373-10692",   dat:"30.04.2025"},
+  {id:210,name:"Graul, Barbara",           addr:"Werringser Straße 24",       plz:"58706",ort:"Menden",            tel:"02373-9613320", dat:"20.08.2025"},
+  {id:209,name:"Graul, Ulrich",            addr:"Werringser Straße 24",       plz:"58706",ort:"Menden",            tel:"02373-9613320", dat:"20.08.2025"},
+  {id:386,name:"Diehr, Eckhard",           addr:"Wilhelmstraße 24a",          plz:"58706",ort:"Menden",            tel:"01771537788",   dat:"18.02.2026"},
+  {id:369,name:"Husemann, Klara A.",       addr:"Ob Glockenteich 29",         plz:"58706",ort:"Menden",            tel:"0157-37733331", dat:"17.02.2026"},
+  {id:321,name:"Toth, Manuela",            addr:"Wöhlerstr. 7",               plz:"58706",ort:"Menden",            tel:"02373-9173975", dat:"17.02.2026"},
+  {id:167,name:"Toth, Paul",               addr:"Wöhlerstr. 7",               plz:"58706",ort:"Menden",            tel:"02373-9173975", dat:"17.02.2026"},
+  {id:445,name:"Temore, Layla",            addr:"Wunne 12",                   plz:"58706",ort:"Menden",            tel:"01575-3666748", dat:"18.02.2026"},
+  {id:342,name:"Aldirmaz, Rezan",          addr:"Alte Provinzialstraße 21",   plz:"58708",ort:"Menden",            tel:"0160-6328001",  dat:"06.05.2025"},
+  {id:375,name:"Glomski-Damm, Ursula",     addr:"Am Gilkamp 6",               plz:"58708",ort:"Menden",            tel:"–",             dat:"14.08.2025"},
+  {id:370,name:"Markau, Fiona Selina",     addr:"Annemonenweg 12",            plz:"58708",ort:"Menden",            tel:"0160-90203762", dat:"16.07.2025"},
+  {id:389,name:"Schulte, Ben",             addr:"Annemonenweg 12",            plz:"58708",ort:"Menden",            tel:"–",             dat:"16.01.2026"},
+  {id:344,name:"Dukellaij, Brahim",        addr:"Arndtstr 27",                plz:"58708",ort:"Menden",            tel:"02373-9709270", dat:"10.02.2026"},
+  {id:203,name:"Gashi, Adesa",             addr:"Brandenburgstraße 20",       plz:"58708",ort:"Menden",            tel:"0157-58152519", dat:"28.04.2026"},
+  {id:202,name:"Gashi, Erjon",             addr:"Brandenburgstraße 20",       plz:"58708",ort:"Menden",            tel:"0157-58152519", dat:"28.04.2026"},
+  {id:204,name:"Gashi, Mendim",            addr:"Brandenburgstraße 20",       plz:"58708",ort:"Menden",            tel:"01797545362",   dat:"28.04.2026"},
+  {id:449,name:"Bauerdick, Dieter",        addr:"Bräukerweg 17a",             plz:"58708",ort:"Menden",            tel:"0179-61554038", dat:"02.06.2026"},
+  {id:281,name:"Schröder, Elisabeth",      addr:"Friedrichstraße 22",         plz:"58708",ort:"Menden",            tel:"02373-10592",   dat:"01.04.2026"},
+  {id:283,name:"Keller, Helga",            addr:"Grünerweg 21",               plz:"58708",ort:"Menden",            tel:"02373-1780072", dat:"27.10.2025"},
+  {id:387,name:"Kaiser, Maria",            addr:"Heckenrosenweg 7",           plz:"58708",ort:"Menden",            tel:"02373-9172530", dat:"14.03.2026"},
+  {id:388,name:"Kaiser, Wilhelm",          addr:"Heckenrosenweg 7",           plz:"58708",ort:"Menden",            tel:"02373-9172530", dat:"09.03.2026"},
+  {id:268,name:"Schulte-Kurteshi, G.",     addr:"Holzer Weg 24",              plz:"58708",ort:"Menden",            tel:"02373-67961",   dat:"26.08.2025"},
+  {id:337,name:"Ner, Johann",              addr:"Im Tiergarten 42",           plz:"58708",ort:"Menden",            tel:"01577-9443733", dat:"16.01.2026"},
+  {id:414,name:"Lutterbeck, Torsten",      addr:"Kornblumenweg 40",           plz:"58708",ort:"Menden",            tel:"01735222175",   dat:"16.01.2026"},
+  {id:235,name:"Kuschel, Jutta",           addr:"Wolfspfad 10",               plz:"58708",ort:"Menden",            tel:"0151-44005540", dat:"14.04.2026"},
+  {id:165,name:"Michler, Viola",           addr:"Morgensternweg 15",          plz:"58708",ort:"Menden",            tel:"02373-65928",   dat:"22.01.2026"},
+  {id:273,name:"Reuter, Aileen",           addr:"Morgesternweg 35",           plz:"58708",ort:"Menden",            tel:"0151-50555189", dat:"19.03.2026"},
+  {id:201,name:"Hussein, Guli",            addr:"Parter-Kolbe Str. 17",       plz:"58708",ort:"Menden",            tel:"0172-6612402",  dat:"08.03.2026"},
+  {id:6,  name:"Wallbaum, Hans-Dieter",    addr:"Rittershausstraße 60",       plz:"58708",ort:"Menden",            tel:"023782692",     dat:"22.06.2026"},
+  {id:194,name:"Hagemann, Silvana",        addr:"Schwitterknapp 99",          plz:"58708",ort:"Menden",            tel:"0176-57911708", dat:"12.08.2025"},
+  {id:195,name:"Kulasic, Ognjen",          addr:"Schwitterknapp 99",          plz:"58708",ort:"Menden",            tel:"0176-57911708", dat:"12.08.2025"},
+  {id:320,name:"Ochwat, Alfons",           addr:"Schwitterknapp 84",          plz:"58708",ort:"Menden",            tel:"02373-600470",  dat:"04.02.2025"},
+  {id:402,name:"Röttger, Hailey",          addr:"Schwitter Berg 109",         plz:"58708",ort:"Menden",            tel:"015222189332",  dat:"30.04.2026"},
+  {id:400,name:"Röttger, Jaimen",          addr:"Schwitter Berg 109",         plz:"58708",ort:"Menden",            tel:"015222189332",  dat:"30.04.2026"},
+  {id:401,name:"Röttger, Taylor",          addr:"Schwitter Berg 109",         plz:"58708",ort:"Menden",            tel:"015222189332",  dat:"30.04.2026"},
+  {id:353,name:"Schulte, Gerd",            addr:"Delyner Str. 8",             plz:"58708",ort:"Menden",            tel:"0176-56347576", dat:"04.02.2025"},
+  {id:381,name:"Azifuaku, Karin",          addr:"Unnaerlandstraße 17",        plz:"58708",ort:"Menden",            tel:"015142880490",  dat:"09.06.2025"},
+  {id:347,name:"Gürel-Kirpi, Semra",       addr:"Unnaer Landstraße 4",        plz:"58708",ort:"Menden",            tel:"0151-51813361", dat:"17.02.2026"},
+  {id:300,name:"Kemper, Adelheid",         addr:"Obere Heidestr. 29",         plz:"58708",ort:"Menden",            tel:"0173-8853931",  dat:"24.08.2025"},
+  {id:7,  name:"Schieferdecker, Annemarie",addr:"Am Hennekei 19",             plz:"58710",ort:"Menden",            tel:"02373/81350",   dat:"01.03.2026"},
+  {id:349,name:"Deckert, Viktor",          addr:"Erich-Kästner-Str. 30",      plz:"58710",ort:"Menden",            tel:"02373-85755",   dat:"22.11.2025"},
+  {id:429,name:"Hoehle, Katharina",        addr:"Kleistrasse 33",             plz:"58710",ort:"Menden",            tel:"01575-4702670", dat:"17.02.2026"},
+  {id:338,name:"Krüger, Walter",           addr:"Kleiststr. 17",              plz:"58710",ort:"Menden",            tel:"02373-81373",   dat:"05.03.2026"},
+  {id:378,name:"Lisowski, Karolina",       addr:"Fischkuhle 9",               plz:"58710",ort:"Menden",            tel:"02373-869760",  dat:"05.08.2025"},
+  {id:456,name:"Niebecker, Anton",         addr:"Zum Kortenrott 4",           plz:"58710",ort:"Menden",            tel:"0179-9161579",  dat:"11.02.2026"},
+  {id:458,name:"Niebecker, Gerda",         addr:"Zum Kortenrott 4",           plz:"58710",ort:"Menden",            tel:"0179-9161579",  dat:"11.02.2026"},
+  {id:348,name:"Röder, Wolfgang",          addr:"Otto Weingarten Str. 11",    plz:"58710",ort:"Menden",            tel:"02373-394327",  dat:"08.02.2026"},
+  {id:352,name:"Fetinidou, Kyriaki",       addr:"Eulenstraße 34",             plz:"58730",ort:"Fröndenberg",       tel:"–",             dat:"04.02.2025"},
+  {id:240,name:"Gensch, Heinrich",         addr:"Westicker Str. 81",          plz:"58730",ort:"Fröndenberg",       tel:"–",             dat:"16.02.2026"},
+  {id:299,name:"Koglin, Karl Heinz",       addr:"Geschwister Scholl Str. 3",  plz:"58730",ort:"Fröndenberg",       tel:"0157-33116837", dat:"01.03.2026"},
+  {id:398,name:"Kühn, Michaela",           addr:"Von Staufenbergstr. 7",      plz:"58730",ort:"Fröndenberg",       tel:"01755223598",   dat:"05.03.2026"},
+  {id:313,name:"Rosenberger, Christel",    addr:"Wilhelm-Feuerhake 18c",      plz:"58730",ort:"Fröndenberg",       tel:"02373-9708849", dat:"19.02.2026"},
+  {id:343,name:"Wendt, Jolie",             addr:"Zum Freisenhagen 27",        plz:"58730",ort:"Fröndenberg",       tel:"02373-177267",  dat:"03.08.2025"},
+  {id:191,name:"Götz, Raphael",            addr:"Zum Freisenhagen 27",        plz:"58730",ort:"Fröndenberg",       tel:"02373-1777267", dat:"20.08.2025"},
+  {id:359,name:"Berete, Billy Nakouma",    addr:"Zum Freisenhagen 27",        plz:"58730",ort:"Fröndenberg",       tel:"–",             dat:"16.07.2025"},
+  {id:460,name:"Beucke, Jasper Magnus",    addr:"Von-Tirpitz-Straße 20",      plz:"58730",ort:"Fröndenberg",       tel:"01573-8342377", dat:"01.06.2026"},
+  {id:461,name:"Beucke, Ronja Luisa",      addr:"Von-Tirpitz-Straße 20",      plz:"58730",ort:"Fröndenberg",       tel:"01573-8342377", dat:"01.06.2026"},
+  {id:361,name:"Dittrich, Krzysztof",      addr:"Wilhelm-Raabe-Weg 12",       plz:"58739",ort:"Wickede",           tel:"01724346776",   dat:"07.04.2025"},
+  {id:403,name:"Brakes, Editha",           addr:"Erlenstrasse 37a",           plz:"58739",ort:"Wickede",           tel:"023777070",     dat:"23.11.2025"},
+  {id:425,name:"Vogel, Jakob",             addr:"Auf d. Heege 20",            plz:"58739",ort:"Wickede",           tel:"01795777129",   dat:"01.02.2026"},
+  {id:298,name:"Minnelli, Giovanni",       addr:"Eisborner Dorfstr. 18",      plz:"58802",ort:"Balve",             tel:"0176-41681013", dat:"19.05.2026"},
+  {id:412,name:"Verley, Edgar",            addr:"Hofstraße 30",               plz:"58802",ort:"Balve",             tel:"02375-2137",    dat:"22.10.2025"},
+  {id:413,name:"Verley, Monika",           addr:"Hofstraße 30",               plz:"58802",ort:"Balve",             tel:"02375-2137",    dat:"22.10.2025"},
+  {id:435,name:"Kaufmann, Levi",           addr:"Bergstrasse 19",             plz:"58809",ort:"Neuenrade",         tel:"0151-19619609", dat:"15.01.2026"},
+  {id:284,name:"Koyupinar, Besime",        addr:"Nöhstraße 1",                plz:"58089",ort:"Hagen",             tel:"0176-57785541", dat:"04.02.2025"},
+  {id:266,name:"Martel, Alexander",        addr:"Adalbertstr. 130",           plz:"44149",ort:"Dortmund",          tel:"–",             dat:"06.08.2025"},
+  {id:407,name:"Navarra, Annemarie",       addr:"Massenerstr 18-22",          plz:"59423",ort:"Unna",              tel:"0176-55555398", dat:"05.12.2025"},
+];
+
+const PLZ_COL = {
+  "58706":"#2d7a4f","58708":"#1d6b8a","58710":"#be123c",
+  "58730":"#7c3aed","58739":"#b45309","58802":"#0e7490",
+  "58638":"#065f46","58640":"#4338ca","58675":"#0369a1",
+  "58089":"#374151","44149":"#6b21a8","58809":"#92400e","59423":"#9a3412",
+};
+
+const BOARDS = [
+  { key:"ma1", label:"Mitarbeiter 1", short:"MA 1", color:"#2d7a4f",
+    group: PATIENTS.filter(p => p.plz === "58706"),
+    sub:"58706 Menden Kernstadt" },
+  { key:"ma2", label:"Mitarbeiter 2", short:"MA 2", color:"#1d6b8a",
+    group: PATIENTS.filter(p => ["58708","58710"].includes(p.plz)),
+    sub:"58708 + 58710 Menden" },
+  { key:"ma3", label:"Mitarbeiter 3", short:"MA 3", color:"#7c3aed",
+    group: PATIENTS.filter(p => !["58706","58708","58710"].includes(p.plz)),
+    sub:"Außenbezirke" },
+  { key:"ma4", label:"Archiv – Erledigt", short:"MA 4", color:"#374151",
+    group: [], sub:"Alle abgehakten Besuche" },
+];
+
+function mapsUrl(list) {
+  if (!list.length) return "#";
+  const stops = ["Hauptstraße+21+58706+Menden",
+    ...list.slice(0,23).map(p => encodeURIComponent(`${p.addr}, ${p.plz} ${p.ort}`))
+  ].join("/");
+  return "https://www.google.com/maps/dir/" + stops;
+}
+
+function useErledigt() {
+  const [erledigt, setErledigt] = useState({});
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem(STORAGE_KEY);
+      if (s) setErledigt(JSON.parse(s));
+    } catch {}
+    setLoaded(true);
+  }, []);
+  const toggle = useCallback((id) => {
+    setErledigt(prev => {
+      const next = { ...prev };
+      if (next[id]) { delete next[id]; }
+      else {
+        const n = new Date();
+        next[id] = `${n.toLocaleDateString("de-DE")} ${n.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})}`;
+      }
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+  const reset = useCallback(() => {
+    setErledigt({});
+    try { localStorage.setItem(STORAGE_KEY, "{}"); } catch {}
+  }, []);
+  return { erledigt, toggle, reset, loaded };
+}
+
+// ── Patient Card ──────────────────────────────────────────────────────────────
+function PatientCard({ p, idx, erledigt, onToggle }) {
+  const [open, setOpen] = useState(false);
+  const done = !!erledigt[p.id];
+  const col = PLZ_COL[p.plz] || "#6b7280";
+
+  return (
+    <div style={{
+      borderRadius: 10,
+      border: `1px solid ${done ? "#bbf7d0" : "#e5e7eb"}`,
+      background: done ? "#f0fdf4" : "#fff",
+      marginBottom: 6,
+      overflow: "hidden",
+      transition: "all 0.15s",
+    }}>
+      {/* Main row */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px" }}>
+
+        {/* Checkbox */}
+        <button onClick={() => onToggle(p.id)} style={{
+          width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+          border: `2px solid ${done ? G : "#d1d5db"}`,
+          background: done ? G : "#fff",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          cursor:"pointer", padding:0, transition:"all 0.15s",
+        }}>
+          {done && <span style={{color:"#fff",fontSize:12,lineHeight:1}}>✓</span>}
+        </button>
+
+        {/* Nr bubble */}
+        <div style={{
+          width:24, height:24, borderRadius:"50%", flexShrink:0,
+          background: done ? "#d1d5db" : col,
+          color:"#fff", fontSize:10, fontWeight:800,
+          display:"flex", alignItems:"center", justifyContent:"center",
+        }}>{idx}</div>
+
+        {/* Name + Address */}
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{
+            fontSize: 13, fontWeight: 700,
+            color: done ? "#6b7280" : "#111",
+            textDecoration: done ? "line-through" : "none",
+          }}>{p.name}</div>
+          <div style={{ fontSize:11, color:"#6b7280", marginTop:1 }}>
+            {p.addr} · {p.plz} {p.ort}
+          </div>
+        </div>
+
+        {/* PLZ badge + expand */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3, flexShrink:0 }}>
+          <span style={{
+            background: col+"18", color: col,
+            border:`1px solid ${col}30`,
+            borderRadius:999, padding:"1px 7px", fontSize:10, fontWeight:700,
+          }}>{p.plz}</span>
+          <button onClick={() => setOpen(v => !v)} style={{
+            background:"none", border:"none", cursor:"pointer",
+            color:"#9ca3af", fontSize:10, padding:0,
+          }}>{open ? "▲ weniger" : "▼ mehr"}</button>
+        </div>
+      </div>
+
+      {/* Expanded detail */}
+      {open && (
+        <div style={{
+          borderTop: "1px solid #f3f4f6",
+          background: "#f9fafb",
+          padding: "10px 12px",
+          display:"flex", gap:12, flexWrap:"wrap", alignItems:"center",
+        }}>
+          <div style={{ flex:1, minWidth:160 }}>
+            <div style={{ fontSize:11, color:"#6b7280" }}>
+              📞 <strong>{p.tel}</strong>
+            </div>
+            <div style={{ fontSize:11, color:"#6b7280", marginTop:3 }}>
+              📅 Letzter Einsatz: <strong>{p.dat}</strong>
+            </div>
+            <div style={{ fontSize:11, color:"#6b7280", marginTop:3 }}>
+              🔢 Klienten-Nr.: <strong>{p.id}</strong>
+            </div>
+            {done && (
+              <div style={{ fontSize:11, color:G, marginTop:3, fontWeight:700 }}>
+                ✓ Erledigt: {erledigt[p.id]}
+              </div>
+            )}
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <a href={`https://www.google.com/maps/search/${encodeURIComponent(p.addr+", "+p.plz+" "+p.ort)}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{ background:G, color:"#fff", borderRadius:7, padding:"6px 12px", fontSize:11, fontWeight:700, textDecoration:"none" }}>
+              🗺️ Maps
+            </a>
+            {p.tel !== "–" && (
+              <a href={`tel:${p.tel.replace(/[-\s/]/g,"")}`}
+                style={{ background:"#eff6ff", color:"#2563eb", border:"1px solid #bfdbfe", borderRadius:7, padding:"6px 12px", fontSize:11, fontWeight:700, textDecoration:"none" }}>
+                📞 Anrufen
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Board Panel ───────────────────────────────────────────────────────────────
+function BoardPanel({ board, erledigt, onToggle, onReset }) {
+  const [search, setSearch] = useState("");
+  const [filterPlz, setFilterPlz] = useState("alle");
+  const [sort, setSort] = useState("route");
+  const [showDone, setShowDone] = useState(true);
+
+  const isArchiv = board.key === "ma4";
+  const rawGroup = isArchiv
+    ? PATIENTS.filter(p => erledigt[p.id]).sort((a,b) => (erledigt[b.id]||"").localeCompare(erledigt[a.id]||""))
+    : board.group;
+
+  const plzList = useMemo(() => ["alle",...new Set(rawGroup.map(p=>p.plz))], [rawGroup]);
+
+  const list = useMemo(() => {
+    let l = [...rawGroup];
+    if (!isArchiv && !showDone) l = l.filter(p => !erledigt[p.id]);
+    if (search) l = l.filter(p =>
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.addr.toLowerCase().includes(search.toLowerCase()) ||
+      p.plz.includes(search)
+    );
+    if (filterPlz !== "alle") l = l.filter(p => p.plz === filterPlz);
+    if (!isArchiv) {
+      if (sort === "name") l.sort((a,b) => a.name.localeCompare(b.name,"de"));
+      if (sort === "datum") l.sort((a,b) => b.dat.split(".").reverse().join("").localeCompare(a.dat.split(".").reverse().join("")));
+      l.sort((a,b) => (!!erledigt[a.id]?1:0)-(!!erledigt[b.id]?1:0));
+    }
+    return l;
+  }, [rawGroup, search, filterPlz, sort, erledigt, showDone, isArchiv]);
+
+  const doneCount = isArchiv ? rawGroup.length : board.group.filter(p=>erledigt[p.id]).length;
+  const total = isArchiv ? PATIENTS.length : board.group.length;
+  const pct = total > 0 ? Math.round(doneCount/total*100) : 0;
+
+  const plzCount = useMemo(() => {
+    const c={}; rawGroup.forEach(p=>c[p.plz]=(c[p.plz]||0)+1); return c;
+  }, [rawGroup]);
+
+  const openList = list.filter(p => !erledigt[p.id]);
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+
+      {/* Stats bar */}
+      <div style={{
+        padding:"12px 16px", borderBottom:"1px solid #f3f4f6",
+        display:"flex", alignItems:"center", gap:12, flexWrap:"wrap",
+      }}>
+        {/* Progress */}
+        <div style={{ flex:1, minWidth:200 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+            <span style={{ fontSize:12, color:"#374151", fontWeight:600 }}>
+              {isArchiv ? `${doneCount} von ${total} abgehakt` : `Fortschritt: ${doneCount}/${total} erledigt`}
+            </span>
+            <span style={{ fontSize:12, fontWeight:800, color:board.color }}>{pct}%</span>
+          </div>
+          <div style={{ height:6, background:"#f3f4f6", borderRadius:9, overflow:"hidden" }}>
+            <div style={{ height:"100%", width:`${pct}%`, background:board.color, borderRadius:9, transition:"width 0.4s" }} />
+          </div>
+        </div>
+
+        {/* PLZ filter bubbles */}
+        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+          <span onClick={()=>setFilterPlz("alle")} style={{
+            background: filterPlz==="alle" ? board.color : "#f3f4f6",
+            color: filterPlz==="alle" ? "#fff" : "#6b7280",
+            borderRadius:999, padding:"3px 10px", fontSize:11, fontWeight:700,
+            cursor:"pointer", border:`1px solid ${filterPlz==="alle"?board.color:"#e5e7eb"}`,
+          }}>Alle</span>
+          {Object.entries(plzCount).map(([plz,n]) => (
+            <span key={plz} onClick={()=>setFilterPlz(plz===filterPlz?"alle":plz)} style={{
+              background: filterPlz===plz ? (PLZ_COL[plz]||"#6b7280") : (PLZ_COL[plz]||"#6b7280")+"15",
+              color: filterPlz===plz ? "#fff" : (PLZ_COL[plz]||"#6b7280"),
+              border:`1px solid ${(PLZ_COL[plz]||"#6b7280")}40`,
+              borderRadius:999, padding:"3px 10px", fontSize:11, fontWeight:700, cursor:"pointer",
+            }}>{plz} <span style={{opacity:0.7}}>({n})</span></span>
+          ))}
+        </div>
+      </div>
+
+      {/* Search + controls */}
+      <div style={{
+        padding:"8px 16px", borderBottom:"1px solid #f3f4f6",
+        display:"flex", gap:8, alignItems:"center", flexWrap:"wrap",
+      }}>
+        <input value={search} onChange={e=>setSearch(e.target.value)}
+          placeholder="🔍 Name, Adresse oder PLZ suchen…"
+          style={{
+            flex:1, minWidth:200,
+            border:"1px solid #e5e7eb", borderRadius:8,
+            padding:"7px 12px", fontSize:12,
+          }}
+        />
+        {!isArchiv && (
+          <>
+            <select value={sort} onChange={e=>setSort(e.target.value)} style={{
+              border:"1px solid #e5e7eb", borderRadius:8, padding:"7px 10px", fontSize:12,
+            }}>
+              <option value="route">Reihenfolge: Route</option>
+              <option value="name">Reihenfolge: Name A–Z</option>
+              <option value="datum">Reihenfolge: Datum</option>
+            </select>
+            <button onClick={()=>setShowDone(v=>!v)} style={{
+              background: showDone ? "#f0fdf4" : "#fff",
+              border:`1px solid ${showDone ? G : "#e5e7eb"}`,
+              borderRadius:8, padding:"7px 12px", fontSize:12,
+              cursor:"pointer", color: showDone ? G : "#9ca3af", fontWeight:600,
+              whiteSpace:"nowrap",
+            }}>
+              {showDone ? "✓ Erledigte ausblenden" : "✓ Erledigte einblenden"}
+            </button>
+          </>
+        )}
+        {isArchiv && doneCount > 0 && (
+          <button onClick={onReset} style={{
+            background:"#fef2f2", border:"1px solid #fca5a5",
+            borderRadius:8, padding:"7px 14px", fontSize:12,
+            cursor:"pointer", color:"#dc2626", fontWeight:700,
+          }}>↺ Alle zurücksetzen</button>
+        )}
+        {!isArchiv && (
+          <a href={mapsUrl(openList)} target="_blank" rel="noopener noreferrer"
+            style={{
+              background: board.color, color:"#fff", borderRadius:8,
+              padding:"7px 14px", fontSize:12, fontWeight:700, textDecoration:"none",
+              whiteSpace:"nowrap",
+            }}>
+            🗺️ Route ({openList.length} offen)
+          </a>
+        )}
+        {isArchiv && doneCount > 0 && (
+          <a href={mapsUrl(list)} target="_blank" rel="noopener noreferrer"
+            style={{
+              background:"#374151", color:"#fff", borderRadius:8,
+              padding:"7px 14px", fontSize:12, fontWeight:700, textDecoration:"none",
+              whiteSpace:"nowrap",
+            }}>
+            🗺️ Route Erledigte
+          </a>
+        )}
+      </div>
+
+      {/* List */}
+      <div style={{ flex:1, overflow:"auto", padding:"12px 16px" }}>
+        {list.length === 0 && (
+          <div style={{ textAlign:"center", padding:48, color:"#9ca3af" }}>
+            <div style={{ fontSize:36, marginBottom:12 }}>{isArchiv ? "📋" : "✅"}</div>
+            <div style={{ fontSize:14, fontWeight:600 }}>
+              {isArchiv ? "Noch keine Besuche abgehakt" : "Keine Treffer"}
+            </div>
+            {isArchiv && (
+              <div style={{ fontSize:12, marginTop:6, color:"#d1d5db" }}>
+                Hake Besuche in MA1–3 ab → sie erscheinen hier automatisch
+              </div>
+            )}
+          </div>
+        )}
+        {list.map((p,i) => (
+          <PatientCard key={p.id} p={p} idx={i+1} erledigt={erledigt} onToggle={onToggle} />
+        ))}
+      </div>
+
+      {/* Footer count */}
+      <div style={{
+        padding:"8px 16px", borderTop:"1px solid #f3f4f6",
+        fontSize:11, color:"#9ca3af", display:"flex", justifyContent:"space-between",
+      }}>
+        <span>{list.length} Einträge angezeigt</span>
+        {!isArchiv && <span style={{color:G,fontWeight:600}}>{openList.length} noch offen · {doneCount} erledigt</span>}
+      </div>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+function App() {
+  const [activeTab, setActiveTab] = useState("ma1");
+  const { erledigt, toggle, reset, loaded } = useErledigt();
+
+  const totalDone = Object.keys(erledigt).length;
+  const totalPct  = Math.round(totalDone / PATIENTS.length * 100);
+
+  if (!loaded) return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"'Segoe UI',sans-serif"}}>
+      <div style={{textAlign:"center",color:G}}>
+        <div style={{fontSize:40,marginBottom:12}}>📋</div>
+        <div style={{fontWeight:700,fontSize:16}}>BeJA §37.3 Dashboard wird geladen…</div>
+      </div>
+    </div>
+  );
+
+  const activeBoard = BOARDS.find(b => b.key === activeTab);
+
+  return (
+    <div style={{
+      height:"100vh", display:"flex", flexDirection:"column",
+      fontFamily:"'Segoe UI',system-ui,sans-serif",
+      background:"#f8fafc",
+    }}>
+      <style>{`
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9px; }
+        button:focus { outline: none; }
+        a:hover { opacity: 0.85; }
+      `}</style>
+
+      {/* ── Top Header ── */}
+      <div style={{
+        background:"#fff", borderBottom:"1px solid #e5e7eb",
+        padding:"10px 20px",
+        display:"flex", alignItems:"center", gap:14, flexShrink:0,
+      }}>
+        <div style={{
+          width:38, height:38, borderRadius:10, background:G,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          fontSize:18, flexShrink:0,
+        }}>📋</div>
+        <div>
+          <div style={{ fontWeight:800, fontSize:16, color:"#111" }}>BeJA §37.3 Tourplanung</div>
+          <div style={{ fontSize:11, color:"#6b7280" }}>
+            {PATIENTS.length} Patienten · Stand 19.05.2026
+          </div>
+        </div>
+
+        {/* Global progress */}
+        <div style={{ flex:1, maxWidth:320, marginLeft:16 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+            <span style={{ fontSize:11, color:"#6b7280" }}>Gesamtfortschritt</span>
+            <span style={{ fontSize:11, fontWeight:800, color:G }}>
+              {totalDone} / {PATIENTS.length} · {totalPct}%
+            </span>
+          </div>
+          <div style={{ height:6, background:"#f3f4f6", borderRadius:9, overflow:"hidden" }}>
+            <div style={{ height:"100%", width:`${totalPct}%`, background:`linear-gradient(90deg,${G},#4ade80)`, borderRadius:9, transition:"width 0.4s" }} />
+          </div>
+        </div>
+
+        <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
+          {BOARDS.map(b => {
+            const cnt = b.key === "ma4"
+              ? Object.keys(erledigt).length
+              : b.group.filter(p=>erledigt[p.id]).length;
+            const tot = b.key === "ma4" ? PATIENTS.length : b.group.length;
+            return (
+              <div key={b.key} style={{
+                background: b.color+"12", border:`1px solid ${b.color}30`,
+                borderRadius:8, padding:"4px 10px", textAlign:"center",
+              }}>
+                <div style={{ fontSize:11, fontWeight:800, color:b.color }}>{cnt}/{tot}</div>
+                <div style={{ fontSize:9, color:"#9ca3af" }}>{b.short}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Tab Bar ── */}
+      <div style={{
+        background:"#fff", borderBottom:"2px solid #e5e7eb",
+        display:"flex", flexShrink:0, overflowX:"auto",
+      }}>
+        {BOARDS.map(b => {
+          const active = activeTab === b.key;
+          const cnt = b.key === "ma4"
+            ? Object.keys(erledigt).length
+            : b.group.filter(p=>erledigt[p.id]).length;
+          const tot = b.key === "ma4" ? PATIENTS.length : b.group.length;
+          const pct2 = tot > 0 ? Math.round(cnt/tot*100) : 0;
+          return (
+            <button key={b.key} onClick={() => setActiveTab(b.key)} style={{
+              padding:"14px 24px",
+              borderBottom: active ? `3px solid ${b.color}` : "3px solid transparent",
+              background: "none", border:"none",
+              borderBottom: active ? `3px solid ${b.color}` : "3px solid transparent",
+              cursor:"pointer",
+              display:"flex", alignItems:"center", gap:10,
+              whiteSpace:"nowrap", flexShrink:0,
+            }}>
+              <div style={{
+                width:28, height:28, borderRadius:7,
+                background: active ? b.color : b.color+"20",
+                color: active ? "#fff" : b.color,
+                fontWeight:800, fontSize:11,
+                display:"flex", alignItems:"center", justifyContent:"center",
+              }}>{b.short.replace("MA ","")}</div>
+              <div style={{ textAlign:"left" }}>
+                <div style={{ fontSize:13, fontWeight:700, color: active ? "#111" : "#6b7280" }}>
+                  {b.label}
+                </div>
+                <div style={{ fontSize:10, color:"#9ca3af" }}>
+                  {b.sub} · {pct2}% erledigt
+                </div>
+              </div>
+              {cnt > 0 && (
+                <span style={{
+                  background: G, color:"#fff",
+                  borderRadius:999, padding:"1px 7px", fontSize:10, fontWeight:700,
+                }}>{cnt}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Content ── */}
+      <div style={{ flex:1, overflow:"hidden" }}>
+        {activeBoard && (
+          <BoardPanel
+            key={activeBoard.key}
+            board={activeBoard}
+            erledigt={erledigt}
+            onToggle={toggle}
+            onReset={reset}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
